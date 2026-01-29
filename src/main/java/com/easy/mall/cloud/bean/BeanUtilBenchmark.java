@@ -1,8 +1,9 @@
 package com.easy.mall.cloud.bean;
 
+import com.easy.mall.cloud.model.SourcePojo;
+import com.easy.mall.cloud.model.TargetPojo;
 import com.easy.mall.cloud.util.BeanUtil;
 import com.easy.mall.cloud.util.UnsafeBeanUtil;
-import lombok.Data;
 import org.springframework.beans.BeanUtils;
 
 import java.util.concurrent.CountDownLatch;
@@ -46,7 +47,7 @@ public class BeanUtilBenchmark {
       BeanUtil.copy(source, target);
     });
 
-    // 3. Spring 方案 (注意：Spring 不提供 convert，需要手动 new)
+    // 3. Spring 方案
     runTest("Spring BeanUtils (Reflection)", () -> {
       TargetPojo target = new TargetPojo();
       BeanUtils.copyProperties(source, target);
@@ -109,28 +110,5 @@ public class BeanUtilBenchmark {
     System.out.printf(" - 总耗时: %.2f ms\n", durationMs);
     System.out.printf(" - 平均单次耗时: %.4f us\n", (durationMs * 1000) / totalOps);
     System.out.printf(" - 吞吐量 (QPS): %,.0f ops/s\n\n", qps);
-  }
-
-  @Data
-  public static class SourcePojo {
-    private String name;
-    private int age;
-    private String address;
-    private double score;
-
-    public SourcePojo(String name, int age, String address, double score) {
-      this.name = name;
-      this.age = age;
-      this.address = address;
-      this.score = score;
-    }
-  }
-
-  @Data
-  public static class TargetPojo {
-    private String name;
-    private int age;
-    private String address;
-    private double score;
   }
 }
