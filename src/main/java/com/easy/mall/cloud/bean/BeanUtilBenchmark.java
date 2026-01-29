@@ -3,8 +3,9 @@ package com.easy.mall.cloud.bean;
 import com.easy.mall.cloud.model.SourcePojo;
 import com.easy.mall.cloud.model.TargetPojo;
 import com.easy.mall.cloud.util.BeanUtil;
+import com.easy.mall.cloud.util.JsonBeanUtil;
+import com.easy.mall.cloud.util.SpringBeanUtil;
 import com.easy.mall.cloud.util.UnsafeBeanUtil;
-import org.springframework.beans.BeanUtils;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -20,6 +21,8 @@ public class BeanUtilBenchmark {
   private static final int OPS_PER_THREAD = 50000;   // 每个线程执行次数
   private static final int WARMUP_ITERATIONS = OPS_PER_THREAD; // 预热次数
 
+  public static final Object[] blackhole = new Object[4096];
+
   public static void main(String[] args) throws InterruptedException {
     printSystemInfo();
 
@@ -33,24 +36,50 @@ public class BeanUtilBenchmark {
     for (int i = 0; i < WARMUP_ITERATIONS; i++) {
       UnsafeBeanUtil.convert(source, TargetPojo.class);
       BeanUtil.convert(source, TargetPojo.class);
+      // 预热 Set
+      TargetPojo t0 = new TargetPojo();
+      t0.setName(source.getName());
+      t0.setAge(source.getAge());
+      t0.setAddress(source.getAddress());
+      t0.setScore(source.getScore());
     }
     System.out.println("Done.\n");
-    // 1. Unsafe 方案
+
+    // Json 方案
+    runTest("JsonBeanUtil (Json)", () -> {
+      TargetPojo target = new TargetPojo();
+      JsonBeanUtil.copy(source, target);
+      blackhole[(int) (Thread.currentThread().threadId() & 1023)] = target;
+    });
+
+    runTest("Direct Field Access", () -> {
+      TargetPojo target = new TargetPojo();
+      target.setName(source.getName());
+      target.setAge(source.getAge());
+      target.setAddress(source.getAddress());
+      target.setScore(source.getScore());
+      blackhole[(int) (Thread.currentThread().threadId() & 1023)] = target;
+    });
+
+    // Unsafe 方案
     runTest("UnsafeBeanUtil (Memory Offset)", () -> {
       TargetPojo target = new TargetPojo();
       UnsafeBeanUtil.copy(source, target);
+      blackhole[(int) (Thread.currentThread().threadId() & 1023)] = target;
     });
 
-    // 2. JDK 21 VarHandle 方案
+    // JDK 21 VarHandle 方案
     runTest("BeanUtil (VarHandle/Invoke)", () -> {
       TargetPojo target = new TargetPojo();
       BeanUtil.copy(source, target);
+      blackhole[(int) (Thread.currentThread().threadId() & 1023)] = target;
     });
 
-    // 3. Spring 方案
+    // Spring 方案
     runTest("Spring BeanUtils (Reflection)", () -> {
       TargetPojo target = new TargetPojo();
-      BeanUtils.copyProperties(source, target);
+      SpringBeanUtil.copy(source, target);
+      blackhole[(int) (Thread.currentThread().threadId() & 1023)] = target;
     });
   }
 
