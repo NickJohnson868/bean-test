@@ -18,7 +18,7 @@ public class BeanUtilBenchmark {
 
   private static final int THREAD_COUNT = 200;       // 虚拟线程数
   private static final int OPS_PER_THREAD = 50000;   // 每个线程执行次数
-  private static final int WARMUP_ITERATIONS = 50000; // 预热次数
+  private static final int WARMUP_ITERATIONS = OPS_PER_THREAD; // 预热次数
 
   public static void main(String[] args) throws InterruptedException {
     printSystemInfo();
